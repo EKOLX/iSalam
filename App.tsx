@@ -8,24 +8,31 @@ import {
   BackHandler,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
+//import * as Location from "expo-location";
 
-import * as messageUtil from "./src/utils/MessageUtil";
+import {
+  createTextMessage,
+  createImageMessage,
+  createLocationMessage,
+} from "./src/utils/MessageUtil";
 import Status from "./src/components/Status";
 import MessageList from "./src/components/MessageList";
 import Message from "./src/models/Message";
+import Toolbar from "./src/components/Toolbar";
 
 export default function App() {
   const [messages, setMessages] = useState([
-    messageUtil.createImageMessage("https://unsplash.it/300/300"),
-    messageUtil.createTextMessage("Wow"),
-    messageUtil.createTextMessage("EL"),
-    messageUtil.createLocationMessage({
+    createImageMessage("https://unsplash.it/300/300"),
+    createTextMessage("Wow"),
+    createTextMessage("EL"),
+    createLocationMessage({
       latitude: 37.78825,
       longitude: -122.4324,
     }),
   ]);
   const [fullScreenImageId, setFullScreenImageId] =
     useState<string | null>(null);
+  const [isInputFocused, setIsInputFocused] = useState(false);
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener(
@@ -49,6 +56,28 @@ export default function App() {
     setFullScreenImageId(null);
   };
 
+  const onPressCameraHandler = () => {};
+
+  const onPressLocationHandler = async () => {
+    navigator.geolocation.getCurrentPosition((position) => {
+      const {
+        coords: { latitude, longitude },
+      } = position;
+      setMessages([
+        createLocationMessage({ latitude, longitude }),
+        ...messages,
+      ]);
+    });
+  };
+
+  const onChangeFocusHandler = (isFocued: boolean) => {
+    setIsInputFocused(isFocued);
+  };
+
+  const onSubmitHandler = (text: string) => {
+    setMessages([createTextMessage(text), ...messages]);
+  };
+
   const onPressMessageHandler = (message: Message) => {
     switch (message.type) {
       case "text":
@@ -69,6 +98,7 @@ export default function App() {
         );
         break;
       case "image":
+        setIsInputFocused(false);
         setFullScreenImageId(message.id);
       default:
         break;
@@ -100,7 +130,17 @@ export default function App() {
 
   const renderInputEditor = () => <View style={styles.inputEditor}></View>;
 
-  const renderToolbar = () => <View style={styles.toolbar}></View>;
+  const renderToolbar = () => (
+    <View style={styles.toolbar}>
+      <Toolbar
+        isFocused={isInputFocused}
+        onSubmit={onSubmitHandler}
+        onChangeFocus={onChangeFocusHandler}
+        onPressCamera={onPressCameraHandler}
+        onPressLocation={onPressLocationHandler}
+      />
+    </View>
+  );
 
   return (
     <View style={styles.container}>
