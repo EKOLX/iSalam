@@ -10,15 +10,21 @@ import {
 import { StatusBar } from "expo-status-bar";
 //import * as Location from "expo-location";
 
+import Status from "./src/components/Status";
+import MessageList from "./src/components/MessageList";
+import Message from "./src/models/Message";
+import Toolbar from "./src/components/Toolbar";
+import ImageGrid from "./src/components/ImageGrid";
+import MeasureLayout from "./src/components/MeasureLayout";
+import KeyboardComponent from "./src/components/KeyboardComponent";
+import MessagingContainer, {
+  InputMethod,
+} from "./src/components/MessagingContainer";
 import {
   createTextMessage,
   createImageMessage,
   createLocationMessage,
 } from "./src/utils/MessageUtil";
-import Status from "./src/components/Status";
-import MessageList from "./src/components/MessageList";
-import Message from "./src/models/Message";
-import Toolbar from "./src/components/Toolbar";
 
 export default function App() {
   const [messages, setMessages] = useState([
@@ -33,6 +39,7 @@ export default function App() {
   const [fullScreenImageId, setFullScreenImageId] =
     useState<string | null>(null);
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const [inputMethod, setInputMethod] = useState(InputMethod.NONE);
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener(
@@ -56,7 +63,10 @@ export default function App() {
     setFullScreenImageId(null);
   };
 
-  const onPressCameraHandler = () => {};
+  const onPressCameraHandler = () => {
+    setIsInputFocused(false);
+    setInputMethod(InputMethod.CUSTOM);
+  };
 
   const onPressLocationHandler = async () => {
     navigator.geolocation.getCurrentPosition((position) => {
@@ -68,6 +78,10 @@ export default function App() {
         ...messages,
       ]);
     });
+  };
+
+  const onChangeInputMethodHandler = (inputMethod: InputMethod) => {
+    setInputMethod(inputMethod);
   };
 
   const onChangeFocusHandler = (isFocued: boolean) => {
@@ -105,6 +119,10 @@ export default function App() {
     }
   };
 
+  const onPressImageHandler = (uri: string) => {
+    setMessages([createImageMessage(uri), ...messages]);
+  };
+
   const renderMessageList = () => (
     <View style={styles.content}>
       <MessageList messages={messages} onPressMessage={onPressMessageHandler} />
@@ -128,7 +146,11 @@ export default function App() {
     );
   };
 
-  const renderInputEditor = () => <View style={styles.inputEditor}></View>;
+  const renderInputEditor = () => (
+    <View style={styles.inputEditor}>
+      <ImageGrid onPressImage={onPressImageHandler} />
+    </View>
+  );
 
   const renderToolbar = () => (
     <View style={styles.toolbar}>
@@ -145,9 +167,23 @@ export default function App() {
   return (
     <View style={styles.container}>
       <Status />
-      {renderMessageList()}
-      {renderToolbar()}
-      {renderInputEditor()}
+      <MeasureLayout>
+        {(layout: any) => (
+          <KeyboardComponent layout={layout}>
+            {(keyboardInfo: any) => (
+              <MessagingContainer
+                {...keyboardInfo}
+                inputMethod={inputMethod}
+                onChangeInputMethod={onChangeInputMethodHandler}
+                renderInputMethodEditor={renderInputEditor}
+              >
+                {renderMessageList()}
+                {renderToolbar()}
+              </MessagingContainer>
+            )}
+          </KeyboardComponent>
+        )}
+      </MeasureLayout>
       {renderFullScreenImage()}
       <StatusBar style="auto" />
     </View>
