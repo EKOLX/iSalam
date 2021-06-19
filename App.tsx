@@ -89,7 +89,10 @@ export default function App() {
   };
 
   const onSubmitHandler = (text: string) => {
-    setMessages([createTextMessage(text), ...messages]);
+    setMessages((currentMessages) => [
+      createTextMessage(text),
+      ...currentMessages,
+    ]);
   };
 
   const onPressMessageHandler = (message: Message) => {
